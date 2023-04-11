@@ -1,0 +1,207 @@
+<html>
+ <head>
+  <title>Говори на языках</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+  <meta charset="utf-8"> 
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+</head>
+<body>
+	<div class="container">
+		<div class="row">
+			<label><h1>Фразы</h1></label>
+		</div>
+	
+		<button type="button" id="home-button" class="btn btn-primary col-sm-3">Главная</button>
+		
+		<select class="form-select form-select-lg mb-3" id="language-selector" style="margin-top: 20px;">
+			<option selected>Выберите язык</option>
+		</select>
+		
+		<table class="table">
+			<thead>
+				<tr>
+					<th scope="col">Идентификатор</th>
+					<th scope="col">Фраза</th>
+					<th scope="col">Описание</th>
+					<th scope="col"></th>
+				</tr>
+			</thead>
+			<tbody id="table-body">
+			</tbody>
+		</table>
+		
+		<div class="form">
+			<button type="button" id="add-phrase-button" class="btn btn-primary col-sm-3">Добавить фразу</button>
+		</div>
+	</div>
+	
+	<script>
+		$("#home-button").on('click', function() {
+			window.location.replace("/")
+		})
+		
+		$(document).ready(function() {
+			$.ajax({
+				url: '/languages/get',        
+				method: 'GET',                      
+				success: function(data){  
+					let languages = JSON.parse(data);
+					languages.forEach((language) => {
+						$("#language-selector").append('<option value=' + language.id + '>' + language.name + '</option>')
+					})
+				}
+			});
+			
+			$("#language-selector").on('change', function() {
+				let languageId = $("#language-selector").val();
+				if (languageId !== 'Выберите язык') {
+					reloadTable(languageId);
+					return;
+				}
+				
+				$("#table-body").html('');
+			});
+			
+			$("#add-phrase-button").on('click', function() {
+				$(this).parent().append(
+					'<input type="text" class="form-control phrase-inputs" id="phrase-input" placeholder="Введите фразу (обязательно)" style="margin-top: 20px;">'
+				)
+				
+				$(this).parent().append(
+					'<input type="text" class="form-control phrase-inputs" id="phrase-description-input" placeholder="Введите описание (обязательно)" style="margin-top: 20px;">'
+				)
+			
+				$(".phrase-inputs").keyup(function(event) {
+					if (event.keyCode === 13) {
+						let phrase = $("#phrase-input").val();
+						
+						let phraseDescription = $("#phrase-description-input").val();
+						
+						let languageId = $("#language-selector").val();
+						
+						if (phrase === '' || phraseDescription === '') {
+							alert('Введите все обязательные поля');
+							return;
+						}
+						
+						if (languageId === 'Выберите язык') {
+							alert('Выберите язык');
+							return;
+						}
+				
+						addPhrase(phrase, phraseDescription, languageId);
+					}
+				});
+			
+				$(this).parent().append(
+					'<div class="row" id="add-clear-button-group"></div>'
+				)
+			
+				$("#add-clear-button-group").append(
+					'<button type="button" id="submit-phrase-button" class="btn btn-primary col-sm-3" style="margin-top: 20px;">Подтвердить</button>'
+				)
+			
+				$("#add-clear-button-group").append(
+					'<button type="button" id="clear-phrase-button" class="btn btn-danger col-sm-3" style="margin-top: 20px;">Очистить</button>'
+				)
+				
+				$("#add-clear-button-group").append(
+					'<button type="button" id="cancel-button" class="btn btn-danger col-sm-3" style="margin-top: 20px;">Отменить</button>'
+				)
+			
+				$("#submit-phrase-button").on('click', function() {
+					let phrase = $("#phrase-input").val();
+						
+					let phraseDescription = $("#phrase-description-input").val();
+						
+					let languageId = $("#language-selector").val();
+						
+					if (phrase === '' || phraseDescription === '') {
+						alert('Введите все обязательные поля');
+						return;
+					}
+					
+					if (languageId === 'Выберите язык') {
+						alert('Выберите язык');
+						return;
+					}
+				
+					addPhrase(phrase, phraseDescription, languageId);
+				
+					$("#phrase-input").val("")
+					
+					$("#phrase-description-input").val("")
+				})
+			
+				$("#clear-phrase-button").on('click', function() {				
+					$("#phrase-input").val("")
+					
+					$("#phrase-description-input").val("")
+				})
+				
+				$("#cancel-button").on('click', function() {
+					$(this).parent().parent().find(".phrase-inputs").remove()
+				
+					$(this).parent().remove()
+				})
+			})
+		})
+		
+		function reloadTable(languageId) 
+		{
+			$("#table-body").html('');
+		
+				$.ajax({
+					url: '/phrases/get',        
+					method: 'GET',       
+					data: {languageId: languageId},
+					success: function(data){  
+						let phrases = JSON.parse(data);
+							phrases.forEach((phrase) => {
+							$("#table-body").append(
+								'<tr><th scope="row">' + phrase.id + '</th><td>' + phrase.phrase + '</td>><td>' + phrase.description + '</td>><td data-id="' + phrase.id + '" class="delete-button" style="color: red;">Удалить</td></tr>'
+							)
+						})
+				
+						$(".delete-button").on('click', function() {							
+							let phraseId = $(this).data('id');
+							deletePhrase(phraseId, languageId);
+						})
+					}
+				});
+		}
+		
+		function addPhrase(phrase, phraseDescription, languageId) 
+		{		
+			$.ajax({
+				url: '/phrases/add',        
+				method: 'GET',                  
+				data: {
+					phrase: phrase,
+					phraseDescription: phraseDescription,
+					languageId: languageId
+				},     
+				success: function(data){  
+					reloadTable(languageId)
+				}
+			});
+		}
+		
+		function deletePhrase(phraseId, languageId) 
+		{
+			$.ajax({
+				url: '/phrases/delete',        
+				method: 'GET',                  
+				data: {phraseId: phraseId},     
+				success: function(data){  
+					reloadTable(languageId)
+				}
+			});
+		}
+	</script>
+</body>
+</html>

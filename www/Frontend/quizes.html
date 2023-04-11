@@ -1,0 +1,203 @@
+<html>
+ <head>
+  <title>Говори на языках</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+  <meta charset="utf-8"> 
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+</head>
+<body>
+	<div class="container">
+		<div class="row">
+			<label><h1>Викторины</h1></label>
+		</div>
+	
+		<button type="button" id="home-button" class="btn btn-primary col-sm-3">Главная</button>
+		
+		<select class="form-select form-select-lg mb-3" id="language-selector" style="margin-top: 20px;">
+			<option selected>Выберите язык</option>
+		</select>
+		
+		<div class="form-check">
+			<input class="form-check-input" type="checkbox" value="" id="words-checkbox">
+			<label class="form-check-label" for="words-checkbox">Включить слова</label>
+		</div>
+		
+		<div class="form-check">
+			<input class="form-check-input" type="checkbox" value="" id="phrases-checkbox">
+			<label class="form-check-label" for="phrases-checkbox">Включить фразы</label>
+		</div>
+		
+		<div class="form">
+			<button type="button" id="compose-quiz-button" class="btn btn-primary" style="margin-top: 20px;">Составить викторину</button>
+			
+			<div id="quiz-container">
+			
+			</div>
+		</div>
+	</div>
+	
+	<script>
+		$("#home-button").on('click', function() {
+			window.location.replace("/")
+		})
+		
+		$(document).ready(function() {
+			$.ajax({
+				url: '/languages/get',        
+				method: 'GET',                      
+				success: function(data){  
+					let languages = JSON.parse(data);
+					languages.forEach((language) => {
+						$("#language-selector").append('<option value=' + language.id + '>' + language.name + '</option>')
+					})
+				}
+			});
+			
+			$("#language-selector").on('change', function() {
+				let languageId = $("#language-selector").val();
+			});
+			
+			$("#compose-quiz-button").on('click', function() {
+				composeQuiz();
+			})
+		})
+		
+		function appendWordQuestion(question, questionId) 
+		{
+			$("#quiz-container").append('<div class="question" id=question-' + question.number + '></div>');
+			
+			$("#question-" + questionId).append('<label style="margin-top: 20px;"><h3>Переведите на русский: ' + question.question + '</h3></label>');
+
+			$("#question-" + questionId).append('<input type="text" class="form-control" id="question-' + questionId + '-input" placeholder="Введите слово" style="margin-top: 5px;">');
+		}
+		
+		function appendPhraseQuestion(question, questionId) 
+		{
+			$("#quiz-container").append('<div class="question" id=question-' + questionId + '></div>');
+			
+			$("#question-" + questionId).append('<label style="margin-top: 20px;"><h3>Запишите фразу на языке: ' + question.question + '</h3></label>');
+
+			$("#question-" + questionId).append('<input type="text" class="form-control" id="question-' + question.number + '-input" placeholder="Введите фразу" style="margin-top: 5px;">');
+		}
+		
+		function renderQuiz(data) 
+		{
+			$("#quiz-container").html("");
+		
+			let questions = JSON.parse(data);
+					
+			let questionId = 1;
+					
+			questions.forEach((question) => {
+				if (question.type == 'word') {
+					appendWordQuestion(question, questionId) 
+				}
+						
+				if (question.type == 'phrase') {
+					appendPhraseQuestion(question, questionId) 
+				}
+						
+				questionId++;
+			})
+					
+			$("#quiz-container").append(
+				'<div class="row" id="submit-cancel-button-group"></div>'
+			);
+					
+			$("#submit-cancel-button-group").append(
+				'<button type="button" id="submit-quiz-button" class="btn btn-primary col-sm-3" style="margin-top: 20px;">Проверить викторину</button>'
+			);
+					
+			$("#submit-cancel-button-group").append(
+				'<button type="button" id="cancel-quiz-button" class="btn btn-danger col-sm-3" style="margin-top: 20px;">Отменить</button>'
+			);
+					
+			$("#cancel-quiz-button").on('click', function() {
+				$("#quiz-container").html("");
+			});
+					
+			$("#submit-quiz-button").on('click', function() {
+				for (let i = 0; i < questionId - 1; i++) {
+					let userResult = $("#question-" + questions[i].number + "-input").val();
+					
+					if (userResult == '') {
+						alert('Пожалуйста, введите все ответы');
+						returnn;
+					}
+						
+					questions[i]['result'] = userResult;
+				}
+						
+				$.ajax({
+					url: '/quizes/process',        
+					method: 'GET',
+					data: {
+						questions: questions
+					},
+					success: function(data){  
+						let result = JSON.parse(data);
+
+						result.correctNumbers.forEach((number) => {
+							let style = $("#question-" + number + "-input").attr("style");
+							style += " border-color: green;";
+							$("#question-" + number + "-input").attr("style", style)
+						})
+							
+						result.wrongNumbers.forEach((number) => {
+							let style = $("#question-" + number + "-input").attr("style");
+							style += " border-color: red;";
+							$("#question-" + number + "-input").attr("style", style)
+						})
+								
+						$("#submit-cancel-button-group").remove();
+								
+						$("#quiz-container").append('<label class="row"><h3>'+ result.result +'</h3></label>');
+							
+						$("#quiz-container").append('<button type="button" id="recompose-quiz-button" class="btn btn-primary" style="margin-top: 20px;">Составить новую викторину</button>')
+							
+						$("#recompose-quiz-button").on('click', function() {
+							composeQuiz();
+						})
+					}
+				});
+			});
+		}
+		
+		function composeQuiz() 
+		{
+			let useWords = $("#words-checkbox").prop('checked');
+				
+			let usePhrases = $("#phrases-checkbox").prop('checked');
+				
+			if (!useWords && !usePhrases) {
+				alert('Выберите хотя бы один тип для викторны');
+				return;
+			}
+				
+			let languageId = $("#language-selector").val();
+				
+			if (languageId === 'Выберите язык') {
+				alert('Выберите язык');
+				return;
+			}
+				
+			$.ajax({
+				url: '/quizes/compose',
+				method: 'GET',
+				data: {
+					useWords: useWords,
+					usePhrases: usePhrases,
+					languageId: languageId
+				},
+				success: function(data){  
+					renderQuiz(data);
+				}
+			});	
+		}
+	</script>
+</body>
+</html>

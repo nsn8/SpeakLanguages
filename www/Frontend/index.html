@@ -1,0 +1,50 @@
+<html>
+ <head>
+  <title>Говори на языках</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+  <meta charset="utf-8"> 
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+</head>
+<body>
+	<div class="row">
+		<label><h1>Выберите действие</h1></label>
+	</div>
+    <div class="row">
+        <button type="button" id="add-language-button" class="btn btn-primary col-sm-3">Языки</button>
+    </div>
+	
+	<div class="row">
+        <button type="button" id="add-word-button" class="btn btn-primary col-sm-3" style="margin-top: 20px;">Слова</button>
+    </div>
+	
+	<div class="row">
+        <button type="button" id="add-phrase-button" class="btn btn-primary col-sm-3" style="margin-top: 20px;">Фразы</button>
+    </div>
+	
+	<div class="row">
+        <button type="button" id="quizes-button" class="btn btn-primary col-sm-3" style="margin-top: 20px;">Викторины</button>
+    </div>
+	
+	<script>
+		$("#add-language-button").on('click', function() {
+			window.location.replace("/languages")
+		})
+		
+		$("#add-word-button").on('click', function() {
+			window.location.replace("/words")
+		})
+		
+		$("#add-phrase-button").on('click', function() {
+			window.location.replace("/phrases")
+		})
+		
+		$("#quizes-button").on('click', function() {
+			window.location.replace("/quizes")
+		})
+	</script>
+</body>
+</html>
